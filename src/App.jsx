@@ -37,7 +37,9 @@ function App() {
           <Tab label="Автомобили" value="cars" />
         </Tabs>
 
-        {tab === 'journal' ? <EventList /> : <CarList />}
+        <Box sx={{ minHeight: 220 }}>
+          {tab === 'journal' ? <EventList /> : <CarList />}
+        </Box>
       </Container>
     </Box>
   )
