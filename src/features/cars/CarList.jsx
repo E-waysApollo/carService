@@ -18,9 +18,15 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import dayjs from 'dayjs'
+import { LocalizationProvider, YearCalendar } from '@mui/x-date-pickers'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { db, createEmptyCar } from '../../db'
 
 const REQUIRED_MESSAGE = 'Марка, модель и пробег обязательны'
+const VIN_INVALID_MESSAGE = 'VIN должен содержать 17 символов'
+const LICENSE_PLATE_INVALID_MESSAGE = 'Госномер должен соответствовать шаблону A 123 BC 77'
+const LICENSE_PLATE_REGEX = /^[A-Z] \d{3} [A-Z]{2} \d{2,3}$/
 
 const toNullableNumber = (value) => {
   if (value === '' || value === null || value === undefined) {
@@ -30,14 +36,47 @@ const toNullableNumber = (value) => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+const LICENSE_PLATE_SLOTS = ['L', 'D', 'D', 'D', 'L', 'L', 'D', 'D', 'D']
+
+const formatLicensePlate = (value) => {
+  const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  const chars = []
+  let slotIndex = 0
+
+  for (const char of clean) {
+    if (slotIndex >= LICENSE_PLATE_SLOTS.length) {
+      break
+    }
+    const expected = LICENSE_PLATE_SLOTS[slotIndex]
+    const isLetter = /[A-Z]/.test(char)
+    const isDigit = /[0-9]/.test(char)
+    if ((expected === 'L' && isLetter) || (expected === 'D' && isDigit)) {
+      chars.push(char)
+      slotIndex += 1
+    }
+  }
+
+  const first = chars.slice(0, 1).join('')
+  const middleDigits = chars.slice(1, 4).join('')
+  const middleLetters = chars.slice(4, 6).join('')
+  const region = chars.slice(6, 9).join('')
+  return [first, middleDigits, middleLetters, region].filter(Boolean).join(' ')
+}
+
+const normalizeVin = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 17)
+
 export function CarList() {
   const [cars, setCars] = useState([])
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(createEmptyCar())
   const [error, setError] = useState('')
+  const [yearDialogOpen, setYearDialogOpen] = useState(false)
 
   const isEditing = useMemo(() => editingId !== null, [editingId])
+  const vinError = form.vin.length > 0 && form.vin.length < 17
+  const licensePlateError =
+    form.licensePlate.length > 0 && !LICENSE_PLATE_REGEX.test(form.licensePlate)
 
   const loadCars = async () => {
     const items = await db.cars.orderBy('id').reverse().toArray()
@@ -52,6 +91,7 @@ export function CarList() {
     setForm(createEmptyCar())
     setEditingId(null)
     setError('')
+    setYearDialogOpen(false)
   }
 
   const openCreateDialog = () => {
@@ -80,7 +120,21 @@ export function CarList() {
 
   const handleChange = (field) => (event) => {
     const value = event.target.value
+    if (field === 'licensePlate') {
+      setForm((prev) => ({ ...prev, licensePlate: formatLicensePlate(value) }))
+      return
+    }
+    if (field === 'vin') {
+      setForm((prev) => ({ ...prev, vin: normalizeVin(value) }))
+      return
+    }
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleYearChange = (nextValue) => {
+    const year = nextValue ? nextValue.year() : ''
+    setForm((prev) => ({ ...prev, year }))
+    setYearDialogOpen(false)
   }
 
   const validateForm = () => {
@@ -89,6 +143,15 @@ export function CarList() {
       setError(REQUIRED_MESSAGE)
       return false
     }
+    if (vinError) {
+      setError(VIN_INVALID_MESSAGE)
+      return false
+    }
+    if (licensePlateError) {
+      setError(LICENSE_PLATE_INVALID_MESSAGE)
+      return false
+    }
+    setError('')
     return true
   }
 
@@ -184,15 +247,29 @@ export function CarList() {
             <TextField label="Модель" value={form.model} onChange={handleChange('model')} required />
             <TextField
               label="Год выпуска"
-              type="number"
               value={form.year}
-              onChange={handleChange('year')}
+              placeholder="Выбери через календарь"
+              InputProps={{ readOnly: true }}
+              onClick={() => setYearDialogOpen(true)}
             />
-            <TextField label="VIN" value={form.vin} onChange={handleChange('vin')} />
+            <TextField
+              label="VIN"
+              value={form.vin}
+              onChange={handleChange('vin')}
+              error={vinError}
+              helperText={vinError ? VIN_INVALID_MESSAGE : 'До 17 символов: латиница и цифры, без пробелов'}
+            />
             <TextField
               label="Госномер"
               value={form.licensePlate}
               onChange={handleChange('licensePlate')}
+              placeholder="A 123 BC 77"
+              error={licensePlateError}
+              helperText={
+                licensePlateError
+                  ? LICENSE_PLATE_INVALID_MESSAGE
+                  : 'Только латиница и цифры, буквы автоматически в верхнем регистре'
+              }
             />
             <TextField
               label="Текущий пробег"
@@ -206,10 +283,23 @@ export function CarList() {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDialog}>Отмена</Button>
-          <Button onClick={saveCar} variant="contained">
+          <Button onClick={saveCar} variant="contained" disabled={vinError || licensePlateError}>
             Сохранить
           </Button>
         </DialogActions>
+      </Dialog>
+
+      <Dialog open={yearDialogOpen} onClose={() => setYearDialogOpen(false)}>
+        <DialogTitle>Выбор года выпуска</DialogTitle>
+        <DialogContent>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <YearCalendar
+              value={form.year ? dayjs(`${form.year}-01-01`) : null}
+              onChange={handleYearChange}
+              disableFuture
+            />
+          </LocalizationProvider>
+        </DialogContent>
       </Dialog>
     </Box>
   )
