@@ -65,7 +65,7 @@ const formatLicensePlate = (value) => {
 
 const normalizeVin = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 17)
 
-export function CarList() {
+export function CarList({ onCarsChanged }) {
   const [cars, setCars] = useState([])
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -176,12 +176,18 @@ export function CarList() {
     }
 
     await loadCars()
+    if (onCarsChanged) {
+      await onCarsChanged()
+    }
     closeDialog()
   }
 
   const deleteCar = async (id) => {
     await db.cars.delete(id)
     await loadCars()
+    if (onCarsChanged) {
+      await onCarsChanged()
+    }
   }
 
   return (
