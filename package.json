@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "preview:prod": "vite preview --host 127.0.0.1 --port 4173",
-    "prod:local": "npm run build && npm run preview:prod"
+    "prod:local": "npm run build && npm run preview:prod",
+    "prod:local:restart": "powershell -NoProfile -Command \"$conn = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue; if ($conn) { $procId = $conn[0].OwningProcess; Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }\" && npm run build && npm run preview:prod -- --strictPort"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
