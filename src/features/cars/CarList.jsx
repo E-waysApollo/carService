@@ -26,7 +26,21 @@ import { db, createEmptyCar } from '../../db'
 const REQUIRED_MESSAGE = 'Марка, модель и пробег обязательны'
 const VIN_INVALID_MESSAGE = 'VIN должен содержать 17 символов'
 const LICENSE_PLATE_INVALID_MESSAGE = 'Госномер должен соответствовать шаблону A 123 BC 77'
+const BRAND_LENGTH_MESSAGE = 'Марка слишком длинная'
+const MODEL_LENGTH_MESSAGE = 'Модель слишком длинная'
+const MILEAGE_LENGTH_MESSAGE = 'Пробег слишком длинный'
 const LICENSE_PLATE_REGEX = /^[A-Z] \d{3} [A-Z]{2} \d{2,3}$/
+const MAX_BRAND_LENGTH = 40
+const MAX_MODEL_LENGTH = 40
+const MAX_MILEAGE_LENGTH = 9
+const TRUNCATED_CELL_SX = {
+  display: 'block',
+  width: '100%',
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+}
 
 const toNullableNumber = (value) => {
   if (value === '' || value === null || value === undefined) {
@@ -74,6 +88,9 @@ export function CarList({ onCarsChanged }) {
   const [yearDialogOpen, setYearDialogOpen] = useState(false)
 
   const isEditing = useMemo(() => editingId !== null, [editingId])
+  const brandLengthError = form.brand.length > MAX_BRAND_LENGTH
+  const modelLengthError = form.model.length > MAX_MODEL_LENGTH
+  const mileageLengthError = String(form.currentMileage).length > MAX_MILEAGE_LENGTH
   const vinError = form.vin.length > 0 && form.vin.length < 17
   const licensePlateError =
     form.licensePlate.length > 0 && !LICENSE_PLATE_REGEX.test(form.licensePlate)
@@ -120,6 +137,19 @@ export function CarList({ onCarsChanged }) {
 
   const handleChange = (field) => (event) => {
     const value = event.target.value
+    if (field === 'brand') {
+      setForm((prev) => ({ ...prev, brand: value.slice(0, MAX_BRAND_LENGTH) }))
+      return
+    }
+    if (field === 'model') {
+      setForm((prev) => ({ ...prev, model: value.slice(0, MAX_MODEL_LENGTH) }))
+      return
+    }
+    if (field === 'currentMileage') {
+      const mileage = value.replace(/\D/g, '').slice(0, MAX_MILEAGE_LENGTH)
+      setForm((prev) => ({ ...prev, currentMileage: mileage }))
+      return
+    }
     if (field === 'licensePlate') {
       setForm((prev) => ({ ...prev, licensePlate: formatLicensePlate(value) }))
       return
@@ -141,6 +171,18 @@ export function CarList({ onCarsChanged }) {
     const hasRequired = form.brand.trim() && form.model.trim() && String(form.currentMileage).trim()
     if (!hasRequired) {
       setError(REQUIRED_MESSAGE)
+      return false
+    }
+    if (brandLengthError) {
+      setError(BRAND_LENGTH_MESSAGE)
+      return false
+    }
+    if (modelLengthError) {
+      setError(MODEL_LENGTH_MESSAGE)
+      return false
+    }
+    if (mileageLengthError) {
+      setError(MILEAGE_LENGTH_MESSAGE)
       return false
     }
     if (vinError) {
@@ -206,25 +248,43 @@ export function CarList({ onCarsChanged }) {
       {cars.length === 0 ? (
         <Typography color="text.secondary">Пока нет ни одного автомобиля.</Typography>
       ) : (
-        <Table size="small">
+        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
           <TableHead>
             <TableRow>
-              <TableCell>Марка</TableCell>
-              <TableCell>Модель</TableCell>
-              <TableCell>Год</TableCell>
-              <TableCell>Госномер</TableCell>
-              <TableCell>Пробег</TableCell>
-              <TableCell align="right">Действия</TableCell>
+              <TableCell sx={{ width: '22%' }}>Марка</TableCell>
+              <TableCell sx={{ width: '22%' }}>Модель</TableCell>
+              <TableCell sx={{ width: '10%' }}>Год</TableCell>
+              <TableCell sx={{ width: '18%' }}>Госномер</TableCell>
+              <TableCell sx={{ width: '12%' }}>Пробег</TableCell>
+              <TableCell align="right" sx={{ width: '16%' }}>
+                Действия
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {cars.map((car) => (
               <TableRow key={car.id}>
-                <TableCell>{car.brand}</TableCell>
-                <TableCell>{car.model}</TableCell>
+                <TableCell title={car.brand} sx={{ maxWidth: 0 }}>
+                  <Box component="span" sx={TRUNCATED_CELL_SX}>
+                    {car.brand}
+                  </Box>
+                </TableCell>
+                <TableCell title={car.model} sx={{ maxWidth: 0 }}>
+                  <Box component="span" sx={TRUNCATED_CELL_SX}>
+                    {car.model}
+                  </Box>
+                </TableCell>
                 <TableCell>{car.year || '-'}</TableCell>
-                <TableCell>{car.licensePlate || '-'}</TableCell>
-                <TableCell>{car.currentMileage}</TableCell>
+                <TableCell title={car.licensePlate || '-'} sx={{ maxWidth: 0 }}>
+                  <Box component="span" sx={TRUNCATED_CELL_SX}>
+                    {car.licensePlate || '-'}
+                  </Box>
+                </TableCell>
+                <TableCell title={String(car.currentMileage)} sx={{ maxWidth: 0 }}>
+                  <Box component="span" sx={TRUNCATED_CELL_SX}>
+                    {car.currentMileage}
+                  </Box>
+                </TableCell>
                 <TableCell align="right">
                   <IconButton aria-label="edit" onClick={() => openEditDialog(car)}>
                     <EditIcon />
@@ -247,10 +307,29 @@ export function CarList({ onCarsChanged }) {
               label="Марка"
               value={form.brand}
               onChange={handleChange('brand')}
+              error={brandLengthError}
+              helperText={
+                brandLengthError
+                  ? `${BRAND_LENGTH_MESSAGE} (максимум ${MAX_BRAND_LENGTH})`
+                  : `${form.brand.length}/${MAX_BRAND_LENGTH}`
+              }
+              inputProps={{ maxLength: MAX_BRAND_LENGTH }}
               required
               autoFocus
             />
-            <TextField label="Модель" value={form.model} onChange={handleChange('model')} required />
+            <TextField
+              label="Модель"
+              value={form.model}
+              onChange={handleChange('model')}
+              error={modelLengthError}
+              helperText={
+                modelLengthError
+                  ? `${MODEL_LENGTH_MESSAGE} (максимум ${MAX_MODEL_LENGTH})`
+                  : `${form.model.length}/${MAX_MODEL_LENGTH}`
+              }
+              inputProps={{ maxLength: MAX_MODEL_LENGTH }}
+              required
+            />
             <TextField
               label="Год выпуска"
               value={form.year}
@@ -279,9 +358,16 @@ export function CarList({ onCarsChanged }) {
             />
             <TextField
               label="Текущий пробег"
-              type="number"
+              type="text"
               value={form.currentMileage}
               onChange={handleChange('currentMileage')}
+              error={mileageLengthError}
+              helperText={
+                mileageLengthError
+                  ? `${MILEAGE_LENGTH_MESSAGE} (максимум ${MAX_MILEAGE_LENGTH})`
+                  : `${String(form.currentMileage).length}/${MAX_MILEAGE_LENGTH}`
+              }
+              inputProps={{ inputMode: 'numeric', maxLength: MAX_MILEAGE_LENGTH }}
               required
             />
             {error ? <Typography color="error">{error}</Typography> : null}
@@ -289,7 +375,17 @@ export function CarList({ onCarsChanged }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDialog}>Отмена</Button>
-          <Button onClick={saveCar} variant="contained" disabled={vinError || licensePlateError}>
+          <Button
+            onClick={saveCar}
+            variant="contained"
+            disabled={
+              vinError ||
+              licensePlateError ||
+              brandLengthError ||
+              modelLengthError ||
+              mileageLengthError
+            }
+          >
             Сохранить
           </Button>
         </DialogActions>
