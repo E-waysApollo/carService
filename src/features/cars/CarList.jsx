@@ -11,6 +11,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -33,10 +34,8 @@ const LICENSE_PLATE_REGEX = /^[A-Z] \d{3} [A-Z]{2} \d{2,3}$/
 const MAX_BRAND_LENGTH = 40
 const MAX_MODEL_LENGTH = 40
 const MAX_MILEAGE_LENGTH = 9
-const TRUNCATED_CELL_SX = {
-  display: 'block',
-  width: '100%',
-  maxWidth: '100%',
+const ELLIPSIS_CELL_SX = {
+  maxWidth: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -248,55 +247,49 @@ export function CarList({ onCarsChanged }) {
       {cars.length === 0 ? (
         <Typography color="text.secondary">Пока нет ни одного автомобиля.</Typography>
       ) : (
-        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: '22%' }}>Марка</TableCell>
-              <TableCell sx={{ width: '22%' }}>Модель</TableCell>
-              <TableCell sx={{ width: '10%' }}>Год</TableCell>
-              <TableCell sx={{ width: '18%' }}>Госномер</TableCell>
-              <TableCell sx={{ width: '12%' }}>Пробег</TableCell>
-              <TableCell align="right" sx={{ width: '16%' }}>
-                Действия
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {cars.map((car) => (
-              <TableRow key={car.id}>
-                <TableCell title={car.brand} sx={{ maxWidth: 0 }}>
-                  <Box component="span" sx={TRUNCATED_CELL_SX}>
-                    {car.brand}
-                  </Box>
-                </TableCell>
-                <TableCell title={car.model} sx={{ maxWidth: 0 }}>
-                  <Box component="span" sx={TRUNCATED_CELL_SX}>
-                    {car.model}
-                  </Box>
-                </TableCell>
-                <TableCell>{car.year || '-'}</TableCell>
-                <TableCell title={car.licensePlate || '-'} sx={{ maxWidth: 0 }}>
-                  <Box component="span" sx={TRUNCATED_CELL_SX}>
-                    {car.licensePlate || '-'}
-                  </Box>
-                </TableCell>
-                <TableCell title={String(car.currentMileage)} sx={{ maxWidth: 0 }}>
-                  <Box component="span" sx={TRUNCATED_CELL_SX}>
-                    {car.currentMileage}
-                  </Box>
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton aria-label="edit" onClick={() => openEditDialog(car)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton aria-label="delete" color="error" onClick={() => deleteCar(car.id)}>
-                    <DeleteIcon />
-                  </IconButton>
+        <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
+          <Table size="small" sx={{ tableLayout: 'fixed', width: '100%', minWidth: 760 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: '22%' }}>Марка</TableCell>
+                <TableCell sx={{ width: '22%' }}>Модель</TableCell>
+                <TableCell sx={{ width: '10%' }}>Год</TableCell>
+                <TableCell sx={{ width: '18%' }}>Госномер</TableCell>
+                <TableCell sx={{ width: '12%' }}>Пробег</TableCell>
+                <TableCell align="right" sx={{ width: '16%' }}>
+                  Действия
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {cars.map((car) => (
+                <TableRow key={car.id}>
+                  <TableCell title={car.brand} sx={ELLIPSIS_CELL_SX}>
+                    {car.brand}
+                  </TableCell>
+                  <TableCell title={car.model} sx={ELLIPSIS_CELL_SX}>
+                    {car.model}
+                  </TableCell>
+                  <TableCell>{car.year || '-'}</TableCell>
+                  <TableCell title={car.licensePlate || '-'} sx={ELLIPSIS_CELL_SX}>
+                    {car.licensePlate || '-'}
+                  </TableCell>
+                  <TableCell title={String(car.currentMileage)} sx={ELLIPSIS_CELL_SX}>
+                    {car.currentMileage}
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton aria-label="edit" onClick={() => openEditDialog(car)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton aria-label="delete" color="error" onClick={() => deleteCar(car.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
       <Dialog open={open} onClose={closeDialog} fullWidth maxWidth="sm">
