@@ -81,6 +81,8 @@ const normalizeVin = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '').sl
 export function CarList({ onCarsChanged }) {
   const [cars, setCars] = useState([])
   const [open, setOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [carToDelete, setCarToDelete] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(createEmptyCar())
   const [error, setError] = useState('')
@@ -223,12 +225,26 @@ export function CarList({ onCarsChanged }) {
     closeDialog()
   }
 
-  const deleteCar = async (id) => {
-    await db.cars.delete(id)
+  const requestDeleteCar = (car) => {
+    setCarToDelete(car)
+    setDeleteDialogOpen(true)
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false)
+    setCarToDelete(null)
+  }
+
+  const confirmDeleteCar = async () => {
+    if (!carToDelete) {
+      return
+    }
+    await db.cars.delete(carToDelete.id)
     await loadCars()
     if (onCarsChanged) {
       await onCarsChanged()
     }
+    closeDeleteDialog()
   }
 
   return (
@@ -281,7 +297,7 @@ export function CarList({ onCarsChanged }) {
                     <IconButton aria-label="edit" onClick={() => openEditDialog(car)}>
                       <EditIcon />
                     </IconButton>
-                    <IconButton aria-label="delete" color="error" onClick={() => deleteCar(car.id)}>
+                    <IconButton aria-label="delete" color="error" onClick={() => requestDeleteCar(car)}>
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
@@ -395,6 +411,19 @@ export function CarList({ onCarsChanged }) {
             />
           </LocalizationProvider>
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>Вы точно хотите удалить выбранный автомобиль?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog}>Нет</Button>
+          <Button color="error" variant="contained" onClick={confirmDeleteCar}>
+            Да
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   )

@@ -41,6 +41,8 @@ const toNullableNumber = (value) => {
 export function EventList({ currentCar }) {
   const [events, setEvents] = useState([])
   const [open, setOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [eventToDelete, setEventToDelete] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(createEmptyEvent())
   const [error, setError] = useState('')
@@ -163,9 +165,23 @@ export function EventList({ currentCar }) {
     closeDialog()
   }
 
-  const deleteEvent = async (id) => {
-    await db.events.delete(id)
+  const requestDeleteEvent = (event) => {
+    setEventToDelete(event)
+    setDeleteDialogOpen(true)
+  }
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false)
+    setEventToDelete(null)
+  }
+
+  const confirmDeleteEvent = async () => {
+    if (!eventToDelete) {
+      return
+    }
+    await db.events.delete(eventToDelete.id)
     await loadEvents(currentCar.id)
+    closeDeleteDialog()
   }
 
   const getTypeLabel = (value) => {
@@ -226,7 +242,11 @@ export function EventList({ currentCar }) {
                   <IconButton aria-label="edit" onClick={() => openEditDialog(event)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton aria-label="delete" color="error" onClick={() => deleteEvent(event.id)}>
+                  <IconButton
+                    aria-label="delete"
+                    color="error"
+                    onClick={() => requestDeleteEvent(event)}
+                  >
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -296,6 +316,19 @@ export function EventList({ currentCar }) {
           <Button onClick={closeDialog}>Отмена</Button>
           <Button onClick={saveEvent} variant="contained">
             Сохранить
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog}>
+        <DialogTitle>Подтверждение удаления</DialogTitle>
+        <DialogContent>
+          <Typography>Вы точно хотите удалить выбранное событие?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog}>Нет</Button>
+          <Button color="error" variant="contained" onClick={confirmDeleteEvent}>
+            Да
           </Button>
         </DialogActions>
       </Dialog>
