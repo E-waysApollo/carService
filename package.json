@@ -10,7 +10,18 @@
     "preview": "vite preview",
     "preview:prod": "vite preview --host 127.0.0.1 --port 4173",
     "prod:local": "npm run build && npm run preview:prod",
-    "prod:local:restart": "powershell -NoProfile -Command \"$conn = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue; if ($conn) { $procId = $conn[0].OwningProcess; Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }\" && npm run build && npm run preview:prod -- --strictPort"
+    "prod:local:restart": "powershell -NoProfile -Command \"$conn = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue; if ($conn) { $procId = $conn[0].OwningProcess; Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue }\" && npm run build && npm run preview:prod -- --strictPort",
+    "port:4173:free": "powershell -NoProfile -Command \"$conn = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue; if ($conn) { $procId = $conn[0].OwningProcess; Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue; Write-Output 'Port 4173 was freed' } else { Write-Output 'Port 4173 already free' }\"",
+    "pm2:start": "npm run port:4173:free && npm run build && pm2 start ecosystem.config.cjs --only carservice-preview",
+    "pm2:restart": "npm run port:4173:free && npm run build && pm2 restart carservice-preview --update-env",
+    "pm2:stop": "pm2 stop carservice-preview",
+    "pm2:delete": "pm2 delete carservice-preview",
+    "pm2:status": "pm2 status",
+    "pm2:logs": "pm2 logs carservice-preview --lines 100",
+    "pm2:save": "pm2 save",
+    "pm2:autostart:install": "schtasks /Create /TN \"carservice-pm2-resurrect\" /SC ONLOGON /TR \"cmd /c cd /d C:\\Проекты\\Код\\carService && npx pm2 resurrect\" /F",
+    "pm2:autostart:status": "schtasks /Query /TN \"carservice-pm2-resurrect\"",
+    "pm2:autostart:remove": "schtasks /Delete /TN \"carservice-pm2-resurrect\" /F"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -27,11 +38,12 @@
     "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react-swc": "^4.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "pm2": "^6.0.13",
     "vite": "^8.0.0-beta.13"
   },
   "overrides": {
