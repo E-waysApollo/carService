@@ -6,20 +6,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   MenuItem,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
-import { createEmptyEvent, db } from '../../db'
+import { createEmptyEvent } from '../../db'
+import { EventCard } from './components/EventCard'
+import { createEvent, deleteEventById, getEventsByCarId, updateEvent } from './services/eventsService'
 
 const REQUIRED_MESSAGE = 'Дата, тип и заголовок обязательны'
 const MAX_TITLE_LENGTH = 80
@@ -43,6 +37,7 @@ export function EventList({ currentCar }) {
   const [open, setOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [eventToDelete, setEventToDelete] = useState(null)
+  const [expandedById, setExpandedById] = useState({})
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(createEmptyEvent())
   const [error, setError] = useState('')
@@ -50,12 +45,7 @@ export function EventList({ currentCar }) {
   const isEditing = useMemo(() => editingId !== null, [editingId])
 
   const loadEvents = async (carId) => {
-    if (!carId) {
-      setEvents([])
-      return
-    }
-    const items = await db.events.where('carId').equals(carId).toArray()
-    items.sort((a, b) => new Date(b.date) - new Date(a.date))
+    const items = await getEventsByCarId(carId)
     setEvents(items)
   }
 
@@ -156,9 +146,9 @@ export function EventList({ currentCar }) {
     }
 
     if (isEditing) {
-      await db.events.update(editingId, payload)
+      await updateEvent(editingId, payload)
     } else {
-      await db.events.add(payload)
+      await createEvent(payload)
     }
 
     await loadEvents(currentCar.id)
@@ -175,18 +165,17 @@ export function EventList({ currentCar }) {
     setEventToDelete(null)
   }
 
+  const toggleExpanded = (eventId) => {
+    setExpandedById((prev) => ({ ...prev, [eventId]: !prev[eventId] }))
+  }
+
   const confirmDeleteEvent = async () => {
     if (!eventToDelete) {
       return
     }
-    await db.events.delete(eventToDelete.id)
+    await deleteEventById(eventToDelete.id)
     await loadEvents(currentCar.id)
     closeDeleteDialog()
-  }
-
-  const getTypeLabel = (value) => {
-    const match = EVENT_TYPE_OPTIONS.find((option) => option.value === value)
-    return match ? match.label : value
   }
 
   return (
@@ -203,57 +192,26 @@ export function EventList({ currentCar }) {
       </Button>
 
       {events.length === 0 ? (
-        <Typography color="text.secondary">Пока нет событий для этого автомобиля.</Typography>
+        <Typography color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
+          Пока нет событий для этого автомобиля.<br />
+          Добавьте первое событие, чтобы начать вести журнал.
+        </Typography>
       ) : (
-        <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: '14%' }}>Дата</TableCell>
-              <TableCell sx={{ width: '12%' }}>Тип</TableCell>
-              <TableCell sx={{ width: '26%' }}>Заголовок</TableCell>
-              <TableCell sx={{ width: '12%' }}>Пробег</TableCell>
-              <TableCell sx={{ width: '14%' }}>Сумма</TableCell>
-              <TableCell sx={{ width: '22%' }} align="right">
-                Действия
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {events.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>{event.date}</TableCell>
-                <TableCell>{getTypeLabel(event.type)}</TableCell>
-                <TableCell title={event.title}>
-                  <Box
-                    component="span"
-                    sx={{
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {event.title}
-                  </Box>
-                </TableCell>
-                <TableCell>{event.mileage ?? '-'}</TableCell>
-                <TableCell>{event.totalCost ?? '-'}</TableCell>
-                <TableCell align="right">
-                  <IconButton aria-label="edit" onClick={() => openEditDialog(event)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    aria-label="delete"
-                    color="error"
-                    onClick={() => requestDeleteEvent(event)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Stack spacing={1.25} sx={{ gap: '10px !important' }}>
+          {events.map((event) => {
+            const isExpanded = !!expandedById[event.id]
+            return (
+              <EventCard
+                key={event.id}
+                event={event}
+                expanded={isExpanded}
+                onToggleExpand={() => toggleExpanded(event.id)}
+                onEdit={() => openEditDialog(event)}
+                onDelete={() => requestDeleteEvent(event)}
+              />
+            )
+          })}
+        </Stack>
       )}
 
       <Dialog open={open} onClose={closeDialog} fullWidth maxWidth="sm">

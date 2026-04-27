@@ -6,7 +6,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   Stack,
   Table,
   TableBody,
@@ -17,12 +16,12 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
 import dayjs from 'dayjs'
 import { LocalizationProvider, YearCalendar } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import { db, createEmptyCar } from '../../db'
+import { createEmptyCar } from '../../db'
+import { CarCard } from './components/CarCard'
+import { createCar, deleteCarById, getCarsDesc, updateCarById } from './services/carsService'
 
 const REQUIRED_MESSAGE = 'Марка, модель и пробег обязательны'
 const VIN_INVALID_MESSAGE = 'VIN должен содержать 17 символов'
@@ -34,12 +33,6 @@ const LICENSE_PLATE_REGEX = /^[A-Z] \d{3} [A-Z]{2} \d{2,3}$/
 const MAX_BRAND_LENGTH = 40
 const MAX_MODEL_LENGTH = 40
 const MAX_MILEAGE_LENGTH = 9
-const ELLIPSIS_CELL_SX = {
-  maxWidth: 0,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-}
 
 const toNullableNumber = (value) => {
   if (value === '' || value === null || value === undefined) {
@@ -97,7 +90,7 @@ export function CarList({ onCarsChanged }) {
     form.licensePlate.length > 0 && !LICENSE_PLATE_REGEX.test(form.licensePlate)
 
   const loadCars = async () => {
-    const items = await db.cars.orderBy('id').reverse().toArray()
+    const items = await getCarsDesc()
     setCars(items)
   }
 
@@ -213,9 +206,9 @@ export function CarList({ onCarsChanged }) {
     }
 
     if (isEditing) {
-      await db.cars.update(editingId, payload)
+      await updateCarById(editingId, payload)
     } else {
-      await db.cars.add(payload)
+      await createCar(payload)
     }
 
     await loadCars()
@@ -239,7 +232,7 @@ export function CarList({ onCarsChanged }) {
     if (!carToDelete) {
       return
     }
-    await db.cars.delete(carToDelete.id)
+    await deleteCarById(carToDelete.id)
     await loadCars()
     if (onCarsChanged) {
       await onCarsChanged()
@@ -279,29 +272,12 @@ export function CarList({ onCarsChanged }) {
             </TableHead>
             <TableBody>
               {cars.map((car) => (
-                <TableRow key={car.id}>
-                  <TableCell title={car.brand} sx={ELLIPSIS_CELL_SX}>
-                    {car.brand}
-                  </TableCell>
-                  <TableCell title={car.model} sx={ELLIPSIS_CELL_SX}>
-                    {car.model}
-                  </TableCell>
-                  <TableCell>{car.year || '-'}</TableCell>
-                  <TableCell title={car.licensePlate || '-'} sx={ELLIPSIS_CELL_SX}>
-                    {car.licensePlate || '-'}
-                  </TableCell>
-                  <TableCell title={String(car.currentMileage)} sx={ELLIPSIS_CELL_SX}>
-                    {car.currentMileage}
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton aria-label="edit" onClick={() => openEditDialog(car)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton aria-label="delete" color="error" onClick={() => requestDeleteCar(car)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
+                <CarCard
+                  key={car.id}
+                  car={car}
+                  onEdit={() => openEditDialog(car)}
+                  onDelete={() => requestDeleteCar(car)}
+                />
               ))}
             </TableBody>
           </Table>

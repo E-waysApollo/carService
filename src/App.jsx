@@ -15,7 +15,7 @@ import {
 import './App.css'
 import { CarList } from './features/cars/CarList'
 import { EventList } from './features/events/EventList'
-import { db } from './db'
+import { getCars } from './features/cars/services/carsService'
 
 const STORAGE_KEY = 'carService.currentCarId'
 
@@ -29,7 +29,7 @@ function App() {
   }
 
   const loadCars = useCallback(async () => {
-    const items = await db.cars.orderBy('id').toArray()
+    const items = await getCars()
     setCars(items)
     return items
   }, [])
