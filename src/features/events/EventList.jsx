@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { createEmptyEvent } from '../../db'
 import { EventCard } from './components/EventCard'
+import { MonthlySummary } from './components/MonthlySummary'
 import { createEvent, deleteEventById, getEventsByCarId, updateEvent } from './services/eventsService'
 
 const REQUIRED_MESSAGE = 'Дата, тип и заголовок обязательны'
@@ -43,6 +44,16 @@ export function EventList({ currentCar, onEventsChanged }) {
   const [error, setError] = useState('')
 
   const isEditing = useMemo(() => editingId !== null, [editingId])
+
+  const eventsVersion = useMemo(() => {
+    return events
+      .map((event) => {
+        const cost = event.totalCost ?? ''
+        const mileage = event.mileage ?? ''
+        return `${event.id}:${event.date}:${event.type}:${mileage}:${cost}`
+      })
+      .join('|')
+  }, [events])
 
   const loadEvents = async (carId) => {
     const items = await getEventsByCarId(carId)
@@ -192,6 +203,8 @@ export function EventList({ currentCar, onEventsChanged }) {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
         Выбран автомобиль: {currentCar.brand} {currentCar.model}.
       </Typography>
+
+      <MonthlySummary carId={currentCar.id} eventsVersion={eventsVersion} />
 
       <Button variant="contained" onClick={openCreateDialog} sx={{ mb: 2 }}>
         Добавить событие
