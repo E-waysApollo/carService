@@ -131,7 +131,7 @@ function App() {
 
         <Box sx={{ minHeight: 220 }}>
           {tab === 'journal' ? (
-            <EventList currentCar={currentCar} />
+            <EventList currentCar={currentCar} onEventsChanged={syncCarsAndSelection} />
           ) : (
             <CarList onCarsChanged={syncCarsAndSelection} />
           )}

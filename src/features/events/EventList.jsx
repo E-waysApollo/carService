@@ -32,7 +32,7 @@ const toNullableNumber = (value) => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-export function EventList({ currentCar }) {
+export function EventList({ currentCar, onEventsChanged }) {
   const [events, setEvents] = useState([])
   const [open, setOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -152,6 +152,9 @@ export function EventList({ currentCar }) {
     }
 
     await loadEvents(currentCar.id)
+    if (onEventsChanged) {
+      await onEventsChanged()
+    }
     closeDialog()
   }
 
@@ -173,8 +176,11 @@ export function EventList({ currentCar }) {
     if (!eventToDelete) {
       return
     }
-    await deleteEventById(eventToDelete.id)
+    await deleteEventById(eventToDelete.id, currentCar.id)
     await loadEvents(currentCar.id)
+    if (onEventsChanged) {
+      await onEventsChanged()
+    }
     closeDeleteDialog()
   }
 
