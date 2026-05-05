@@ -10,7 +10,8 @@ import {
   Typography,
 } from '@mui/material'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
-import BuildIcon from '@mui/icons-material/Build'
+import BuildCircleIcon from '@mui/icons-material/BuildCircle'
+import CarRepairIcon from '@mui/icons-material/CarRepair'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
@@ -59,9 +60,17 @@ const formatMoneyPerKm = (value) => {
   return `${value.toFixed(2).replace('.', ',')} ₽/км`
 }
 
-const SummaryPill = ({ icon, label, value, subValue, iconBg = 'primary.main', iconColor = 'primary.contrastText' }) => {
+const SummaryPill = ({
+  icon,
+  label,
+  value,
+  subValue,
+  iconBg = 'primary.main',
+  iconColor = 'primary.contrastText',
+  cardSx,
+}) => {
   return (
-    <Card elevation={2} sx={{ borderRadius: 3, flex: '1 1 220px' }}>
+    <Card elevation={2} sx={{ borderRadius: 3, height: '100%', ...cardSx }}>
       <CardContent sx={{ py: 2 }}>
         <Stack direction="row" spacing={1.5} alignItems="flex-start">
           <Box
@@ -174,8 +183,15 @@ export function MonthlySummary({ carId, eventsVersion }) {
         </TextField>
       </Stack>
 
-      <Stack direction="row" flexWrap="wrap" gap={1.25}>
-        <Box sx={{ flex: '1 1 320px', minWidth: 260 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 1.25,
+          gridTemplateColumns: { xs: '1fr', lg: 'minmax(320px, 1.2fr) minmax(0, 2fr)' },
+          alignItems: 'stretch',
+        }}
+      >
+        <Box>
           <SummaryPill
             icon={<AccountBalanceWalletIcon />}
             label="Общие расходы"
@@ -191,33 +207,35 @@ export function MonthlySummary({ carId, eventsVersion }) {
           />
         </Box>
 
-        <SummaryPill
-          icon={<BuildIcon />}
-          label="ТО"
-          value={formatMoneyRu(report?.spend?.maintenance)}
-          subValue={`${report?.spend?.maintenancePct ?? 0}%`}
-          iconBg="#e8f5e9"
-          iconColor="#2e7d32"
-        />
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 1.25 }}>
+          <SummaryPill
+            icon={<BuildCircleIcon />}
+            label="ТО"
+            value={formatMoneyRu(report?.spend?.maintenance)}
+            subValue={`${report?.spend?.maintenancePct ?? 0}%`}
+            iconBg="#e8f5e9"
+            iconColor="#2e7d32"
+          />
 
-        <SummaryPill
-          icon={<BuildIcon />}
-          label="Ремонт"
-          value={formatMoneyRu(report?.spend?.repair)}
-          subValue={`${report?.spend?.repairPct ?? 0}%`}
-          iconBg="#fff3e0"
-          iconColor="#ef6c00"
-        />
+          <SummaryPill
+            icon={<CarRepairIcon />}
+            label="Ремонт"
+            value={formatMoneyRu(report?.spend?.repair)}
+            subValue={`${report?.spend?.repairPct ?? 0}%`}
+            iconBg="#fff3e0"
+            iconColor="#ef6c00"
+          />
 
-        <SummaryPill
-          icon={<LocalGasStationIcon />}
-          label="Заправки"
-          value={formatMoneyRu(report?.spend?.refuel)}
-          subValue={`${report?.spend?.refuelPct ?? 0}%`}
-          iconBg="#e3f2fd"
-          iconColor="#1565c0"
-        />
-      </Stack>
+          <SummaryPill
+            icon={<LocalGasStationIcon />}
+            label="Заправки"
+            value={formatMoneyRu(report?.spend?.refuel)}
+            subValue={`${report?.spend?.refuelPct ?? 0}%`}
+            iconBg="#e3f2fd"
+            iconColor="#1565c0"
+          />
+        </Box>
+      </Box>
 
       <Card elevation={2} sx={{ borderRadius: 3 }}>
         <CardContent sx={{ py: 2 }}>

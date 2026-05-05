@@ -13,7 +13,8 @@ import EditIcon from '@mui/icons-material/Edit'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
 import LocalGasStationIcon from '@mui/icons-material/LocalGasStation'
-import BuildIcon from '@mui/icons-material/Build'
+import BuildCircleIcon from '@mui/icons-material/BuildCircle'
+import CarRepairIcon from '@mui/icons-material/CarRepair'
 
 const getEventTypeConfig = (type) => {
   switch (type) {
@@ -21,13 +22,13 @@ const getEventTypeConfig = (type) => {
       return {
         label: 'ТО',
         color: 'success',
-        icon: <BuildIcon fontSize="small" />,
+        icon: <BuildCircleIcon fontSize="small" />,
       }
     case 'repair':
       return {
         label: 'Ремонт',
         color: 'warning',
-        icon: <BuildIcon fontSize="small" />,
+        icon: <CarRepairIcon fontSize="small" />,
       }
     case 'refuel':
       return {
