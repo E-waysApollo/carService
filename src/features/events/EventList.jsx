@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Box,
   Button,
+  Container,
   Dialog,
   DialogActions,
   DialogContent,
@@ -18,6 +19,7 @@ import { createEvent, deleteEventById, getEventsByCarId, updateEvent } from './s
 
 const REQUIRED_MESSAGE = 'Дата, тип и заголовок обязательны'
 const MAX_TITLE_LENGTH = 80
+const FOOTER_HEIGHT = 72
 const EVENT_TYPE_OPTIONS = [
   { value: 'maintenance', label: 'ТО' },
   { value: 'repair', label: 'Ремонт' },
@@ -196,19 +198,12 @@ export function EventList({ currentCar, onEventsChanged }) {
   }
 
   return (
-    <Box>
+    <Box sx={{ pb: `calc(${FOOTER_HEIGHT}px + env(safe-area-inset-bottom))` }}>
       <Typography variant="h5" gutterBottom>
         Журнал событий
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-        Выбран автомобиль: {currentCar.brand} {currentCar.model}.
-      </Typography>
 
       <MonthlySummary carId={currentCar.id} eventsVersion={eventsVersion} />
-
-      <Button variant="contained" onClick={openCreateDialog} sx={{ mb: 2 }}>
-        Добавить событие
-      </Button>
 
       {events.length === 0 ? (
         <Typography color="text.secondary" sx={{ mt: 4, textAlign: 'center' }}>
@@ -232,6 +227,28 @@ export function EventList({ currentCar, onEventsChanged }) {
           })}
         </Stack>
       )}
+
+      <Box
+        component="footer"
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          minHeight: FOOTER_HEIGHT,
+          py: 1.5,
+          borderTop: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          zIndex: (theme) => theme.zIndex.appBar - 1,
+        }}
+      >
+        <Container maxWidth="md" sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button variant="contained" onClick={openCreateDialog}>
+            Добавить событие
+          </Button>
+        </Container>
+      </Box>
 
       <Dialog open={open} onClose={closeDialog} fullWidth maxWidth="sm">
         <DialogTitle>{isEditing ? 'Редактировать событие' : 'Новое событие'}</DialogTitle>

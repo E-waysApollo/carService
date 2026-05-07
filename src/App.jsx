@@ -81,20 +81,30 @@ function App() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <CssBaseline />
       <AppBar position="static">
-        <Toolbar sx={{ alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
-            Car Service Journal
-          </Typography>
-          {cars.length > 0 ? (
-            <FormControl
-              size="small"
+        <Container maxWidth="md">
+          <Toolbar disableGutters sx={{ alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Typography variant="h6" component="h1" sx={{ whiteSpace: 'nowrap' }}>
+              Car Service Journal
+            </Typography>
+            <Tabs
+              value={tab}
+              onChange={handleChange}
+              textColor="inherit"
+              indicatorColor="secondary"
               sx={{
-                width: 300,
-                maxWidth: '100%',
-                bgcolor: 'white',
-                borderRadius: 1,
+                minHeight: 48,
+                flexGrow: 1,
+                minWidth: 0,
               }}
             >
+              <Tab label="Журнал" value="journal" />
+              <Tab label="Автомобили" value="cars" />
+            </Tabs>
+            {cars.length > 0 ? (
+              <FormControl
+                size="small"
+                sx={{ width: { xs: '100%', sm: 300 }, maxWidth: '100%', bgcolor: 'white', borderRadius: 1 }}
+              >
                 <Select
                   value={currentCarId ?? ''}
                   onChange={handleCurrentCarChange}
@@ -118,17 +128,13 @@ function App() {
                     </MenuItem>
                   ))}
                 </Select>
-            </FormControl>
-          ) : null}
-        </Toolbar>
+              </FormControl>
+            ) : null}
+          </Toolbar>
+        </Container>
       </AppBar>
 
       <Container maxWidth="md" sx={{ py: 3 }}>
-        <Tabs value={tab} onChange={handleChange} sx={{ mb: 2 }}>
-          <Tab label="Журнал" value="journal" />
-          <Tab label="Автомобили" value="cars" />
-        </Tabs>
-
         <Box sx={{ minHeight: 220 }}>
           {tab === 'journal' ? (
             <EventList currentCar={currentCar} onEventsChanged={syncCarsAndSelection} />
