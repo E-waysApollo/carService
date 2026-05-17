@@ -145,6 +145,106 @@ const computeMileageDeltaKm = (allEventsSortedDesc, monthStart, monthEndExclusiv
   return { mileageDeltaKm: 0, mileageMethod: 'none' }
 }
 
+const INVALID_MONTH_KEY = 'invalid-date'
+
+const getMonthLabelRu = (monthKey) => {
+  if (monthKey === INVALID_MONTH_KEY) {
+    return 'Без даты'
+  }
+
+  const [yearRaw, monthRaw] = String(monthKey).split('-')
+  const year = Number(yearRaw)
+  const monthIndex = Number(monthRaw) - 1
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+    return 'Без даты'
+  }
+
+  const date = new Date(year, monthIndex, 1)
+  const monthName = date.toLocaleString('ru-RU', { month: 'long' })
+  const capitalizedMonth = monthName ? monthName[0].toUpperCase() + monthName.slice(1) : monthName
+  return `${capitalizedMonth} ${year}`
+}
+
+const toMonthKey = (dateValue) => {
+  const parsedDate = new Date(dateValue)
+  const time = parsedDate.getTime()
+  if (!Number.isFinite(time)) {
+    return INVALID_MONTH_KEY
+  }
+  return `${parsedDate.getFullYear()}-${pad2(parsedDate.getMonth() + 1)}`
+}
+
+const toValidNumberOrNull = (value) => {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : null
+}
+
+export const buildEventMonthSections = (events) => {
+  if (!Array.isArray(events) || events.length === 0) {
+    return []
+  }
+
+  const sectionsMap = new Map()
+
+  for (const event of events) {
+    const monthKey = toMonthKey(event?.date)
+    if (!sectionsMap.has(monthKey)) {
+      sectionsMap.set(monthKey, {
+        monthKey,
+        monthLabel: getMonthLabelRu(monthKey),
+        events: [],
+        stats: {
+          count: 0,
+          totalCost: 0,
+          mileageDelta: null,
+        },
+      })
+    }
+
+    const section = sectionsMap.get(monthKey)
+    section.events.push(event)
+  }
+
+  const validSections = []
+  let invalidSection = null
+
+  for (const section of sectionsMap.values()) {
+    const validMileages = []
+    let totalCost = 0
+
+    for (const event of section.events) {
+      const cost = toValidNumberOrNull(event?.totalCost)
+      if (cost !== null) {
+        totalCost += cost
+      }
+
+      const mileage = toValidNumberOrNull(event?.mileage)
+      if (mileage !== null) {
+        validMileages.push(mileage)
+      }
+    }
+
+    section.stats.count = section.events.length
+    section.stats.totalCost = totalCost
+    section.stats.mileageDelta =
+      validMileages.length >= 2 ? Math.max(...validMileages) - Math.min(...validMileages) : null
+
+    if (section.monthKey === INVALID_MONTH_KEY) {
+      invalidSection = section
+    } else {
+      validSections.push(section)
+    }
+  }
+
+  validSections.sort((a, b) => b.monthKey.localeCompare(a.monthKey))
+
+  if (invalidSection) {
+    validSections.push(invalidSection)
+  }
+
+  return validSections
+}
+
 export const getMonthlyReport = async (carId, monthYear) => {
   if (!carId) {
     return null

@@ -14,8 +14,15 @@ import {
 } from '@mui/material'
 import { createEmptyEvent } from '../../db'
 import { EventCard } from './components/EventCard'
+import { MonthSectionHeader } from './components/MonthSectionHeader'
 import { MonthlySummary } from './components/MonthlySummary'
-import { createEvent, deleteEventById, getEventsByCarId, updateEvent } from './services/eventsService'
+import {
+  buildEventMonthSections,
+  createEvent,
+  deleteEventById,
+  getEventsByCarId,
+  updateEvent,
+} from './services/eventsService'
 
 const REQUIRED_MESSAGE = 'Дата, тип и заголовок обязательны'
 const MAX_TITLE_LENGTH = 80
@@ -56,6 +63,8 @@ export function EventList({ currentCar, onEventsChanged }) {
       })
       .join('|')
   }, [events])
+
+  const monthSections = useMemo(() => buildEventMonthSections(events), [events])
 
   const loadEvents = async (carId) => {
     const items = await getEventsByCarId(carId)
@@ -211,20 +220,26 @@ export function EventList({ currentCar, onEventsChanged }) {
           Добавьте первое событие, чтобы начать вести журнал.
         </Typography>
       ) : (
-        <Stack spacing={1.25} sx={{ gap: '10px !important' }}>
-          {events.map((event) => {
-            const isExpanded = !!expandedById[event.id]
-            return (
-              <EventCard
-                key={event.id}
-                event={event}
-                expanded={isExpanded}
-                onToggleExpand={() => toggleExpanded(event.id)}
-                onEdit={() => openEditDialog(event)}
-                onDelete={() => requestDeleteEvent(event)}
-              />
-            )
-          })}
+        <Stack spacing={3}>
+          {monthSections.map((section) => (
+            <Stack key={section.monthKey} spacing={1.25} sx={{ gap: '10px !important' }}>
+              <MonthSectionHeader monthLabel={section.monthLabel} stats={section.stats} />
+
+              {section.events.map((event) => {
+                const isExpanded = !!expandedById[event.id]
+                return (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    expanded={isExpanded}
+                    onToggleExpand={() => toggleExpanded(event.id)}
+                    onEdit={() => openEditDialog(event)}
+                    onDelete={() => requestDeleteEvent(event)}
+                  />
+                )
+              })}
+            </Stack>
+          ))}
         </Stack>
       )}
 

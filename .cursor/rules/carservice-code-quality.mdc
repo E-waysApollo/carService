@@ -1,0 +1,31 @@
+---
+description: Guardrails for safe, consistent agent changes in carService
+alwaysApply: true
+---
+
+# carService Agent Rule
+
+## Scope and safety
+- Делай только изменения по задаче, не трогай несвязанные файлы.
+- Сохраняй текущую feature-first структуру: `src/features/<feature>/{components,services}`.
+- Не делай массовый рефакторинг или переносы без явного запроса.
+
+## Architecture boundaries
+- UI и разметка: только в компонентах.
+- Работа с Dexie и вычисления: в `services` (например, `src/features/*/services/*.js`).
+- Не дублируй бизнес-логику в нескольких компонентах; выноси в функцию/сервис.
+
+## Change quality
+- Сохраняй существующее поведение, если задача не просит менять логику.
+- Добавляй guards для `null/undefined` и некорректных числовых значений.
+- Для фиксированных header/footer учитывай, чтобы контент не перекрывался.
+- Следуй текущему UI-стилю MUI (Container/Stack/Dialog/TextField и существующие отступы).
+
+## Validation before finish
+- Обязательно прогоняй `npm run lint` и `npm run build` после существенных правок.
+- Если появились ошибки из-за твоих изменений, исправь их до завершения.
+
+## Response contract
+- В ответе укажи: какие файлы изменены и зачем.
+- Кратко сообщи результаты проверок (`lint`/`build`).
+- Отдельно перечисли риски или ограничения, если они остались.
